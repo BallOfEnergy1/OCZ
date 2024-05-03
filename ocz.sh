@@ -18,8 +18,10 @@ else
   if type == "compress" then
     if not args[2] then
       print("No file provided.")
+      return true
     elseif not require("filesystem").exists(args[2]) then
       print("File '" .. args[2] .. "' not found.")
+      return true
     else
       print("OCZ Compression")
       print("Ready: ")
@@ -41,8 +43,10 @@ else
   elseif type == "decompress" then
     if not args[2] then
       print("No file provided.")
+      return true
     elseif not require("filesystem").exists(args[2]) then
       print("File '" .. args[2] .. "' not found.")
+      return true
     else
       print("OCZ Decompression")
       print("Ready: ")
@@ -62,10 +66,32 @@ else
       end
     end
   elseif type == "run" then
-  
+    if not args[2] then
+      print("No file provided.")
+      return true
+    elseif not require("filesystem").exists(args[2]) then
+      print("File '" .. args[2] .. "' not found.")
+      return true
+    else
+      print("OCZ Decompression/Execution")
+      print("Ready: ")
+      print("Decompress and Execute file: '" .. args[2] .. "'.")
+      print("Y to confirm, N to cancel.")
+      local user = io.read()
+      if user == "y" or user == "Y" then
+        print("Decompression starting...")
+        local time1 = os.time() * (1000/60/60) * 20
+        ocz_lib.runCompressedFile(args[2])
+        local time2 = os.time() * (1000/60/60) * 20
+        print("Execution complete, took (" .. tostring(time2-time1) .. "s).")
+      else
+        print("Canceled.")
+        return true
+      end
+    end
   elseif type == "help" then
-  
+    
   elseif type == "debug" then
-  
+    
   end
 end
