@@ -3,11 +3,7 @@ local args, ops = require("shell").parse(...)
 
 local ocz_lib = require("ocz-lib")
 
-local function parseTable()
-
-end
-
-if args == {} then
+if args[1] == nil then
   print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
   print("Valid commands:")
   print("  ocz compress")
@@ -15,6 +11,7 @@ if args == {} then
   print("  ocz run")
   print("  ocz help")
   print("  ocz debug")
+  print("  ocz setting")
   print("Use `ocz help command` to see information on how to use a specific command.")
   return true
 else
@@ -30,21 +27,19 @@ else
       print("OCZ Compression")
       print("Ready: ")
       print("Compress file: '" .. args[2] .. "'.")
-      print("Destination: '" .. args[3] or args[2] .. "'.")
+      print("Destination: '" .. (args[3] or args[2]) .. "'.")
       print("Y to confirm, N to cancel.")
-      local i = 0
-      for _, v in pairs(ops) do
-        if v == "a" then
-          user = "Y"
-        end
-        i = i + 1
-      end
+      local user = (ops["a"] and "Y") or io.read()
       if user == "y" or user == "Y" then
         print("Compression starting...")
         local time1 = os.time() * (1000/60/60) * 20
-        ocz_lib.compressFile(args[2], args[3] or args[2])
+        local result = ocz_lib.compressFile(args[2], args[3] or args[2])
+        if not result then
+          print("Compression failed.")
+          return true
+        end
         local time2 = os.time() * (1000/60/60) * 20
-        print("Compression complete, took (" .. tostring(time2-time1) .. "s).")
+        print("Compression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
       else
         print("Canceled.")
         return true
@@ -61,15 +56,19 @@ else
       print("OCZ Decompression")
       print("Ready: ")
       print("Decompress file: '" .. args[2] .. "'.")
-      print("Destination: '" .. args[3] or args[2] .. "'.")
+      print("Destination: '" .. (args[3] or args[2]) .. "'.")
       print("Y to confirm, N to cancel.")
-      local user = io.read()
+      local user = (ops["a"] and "Y") or io.read()
       if user == "y" or user == "Y" then
         print("Decompression starting...")
         local time1 = os.time() * (1000/60/60) * 20
-        ocz_lib.decompressFile(args[2], args[3] or args[2])
+        local result = ocz_lib.decompressFile(args[2], args[3] or args[2])
+        if not result then
+          print("Decompression failed.")
+          return true
+        end
         local time2 = os.time() * (1000/60/60) * 20
-        print("Decompression complete, took (" .. tostring(time2-time1) .. "s).")
+        print("Decompression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
       else
         print("Canceled.")
         return true
@@ -87,21 +86,146 @@ else
       print("Ready: ")
       print("Decompress and Execute file: '" .. args[2] .. "'.")
       print("Y to confirm, N to cancel.")
-      local user = io.read()
+      local user = (ops["a"] and "Y") or io.read()
       if user == "y" or user == "Y" then
         print("Decompression starting...")
         local time1 = os.time() * (1000/60/60) * 20
         ocz_lib.runCompressedFile(args[2])
         local time2 = os.time() * (1000/60/60) * 20
-        print("Execution complete, took (" .. tostring(time2-time1) .. "s).")
+        print("Execution complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
       else
         print("Canceled.")
         return true
       end
     end
   elseif type == "help" then
-    
+    if not args[2] then
+      print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
+      print("Valid commands:")
+      print("  ocz compress")
+      print("  ocz decompress")
+      print("  ocz run")
+      print("  ocz help")
+      print("  ocz debug")
+      print("Use `ocz help command` to see information on how to use a specific command.")
+    elseif args[2] == "compress" then
+      print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
+      print("ocz compress Syntax:")
+      print("ocz compress source_file [destination_file] [-a]")
+      print("Compresses and the file provided and outputs to a file.")
+      print("If `destination_file` is not provided then the file at `source_file` will be overridden with the compressed data.")
+      print("Arguments:")
+      print("source_file: File to compress.")
+      print("destination_file: Location to store data.")
+      print("Options:")
+      print("-a: Do not ask for user confirmation")
+    elseif args[2] == "decompress" then
+      print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
+      print("ocz decompress Syntax:")
+      print("ocz decompress source_file [destination_file] [-a]")
+      print("Decompresses and the file provided and outputs to a file.")
+      print("If `destination_file` is not provided then the file at `source_file` will be overridden with the decompressed data.")
+      print("Arguments:")
+      print("source_file: File to decompress.")
+      print("destination_file: Location to store data.")
+      print("Options:")
+      print("-a: Do not ask for user confirmation")
+    elseif args[2] == "run" then
+      print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
+      print("ocz run Syntax:")
+      print("ocz run source_file [-a]")
+      print("Decompresses and directly executes the file provided.")
+      print("Arguments:")
+      print("source_file: File to decompress then run.")
+      print("Options:")
+      print("-a: Do not ask for user confirmation")
+    elseif args[2] == "debug" then
+      print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
+      print("ocz debug Syntax:")
+      print("ocz debug")
+      print("Prints debug information about the program.")
+    elseif args[2] == "setting" then
+      print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
+      print("ocz setting Syntax:")
+      print("ocz setting setting_name [value] [-s]")
+      print("Arguments:")
+      print("source_file: File to decompress.")
+      print("destination_file: Location to store data.")
+      print("Options:")
+      print("-a: Do not ask for user confirmation")
+      print("Prints debug information about the program.")
+    else
+      print("Command not found.")
+    end
+    return true
   elseif type == "debug" then
-    
+    local a = _G.ocz_settings
+    local prog = a.prog
+    local override = a.override
+    print("OCZ (OCZip) Version: " .. prog.version)
+    print("Debug information:")
+    print("Global table address: " .. tostring(a))
+    print("------------------------------")
+    print("Program private values: ")
+    print("Table address: " .. tostring(prog))
+    print("`version`: " .. tostring(prog.version))
+    print("`override`: " .. tostring(prog.override))
+    print("`check_data`: " .. tostring(prog.check_data))
+    print("------------------------------")
+    print("Override values: ")
+    print("Table address: " .. tostring(override))
+    print("`compress`: " .. tostring(override.compress))
+    print("`algorithm_version`: " .. tostring(override.algorithm_version))
+    print("`use_data_card`: " .. tostring(override.use_data_card))
+    print("`checksum`: " .. tostring(override.checksum))
+    print("`checksum_type`: " .. tostring(override.checksum_type))
+    print("`force_data_card`: " .. tostring(override.force_data_card))
+    print("------------------------------")
+    print("Program public values:")
+    print("`compress`: " .. tostring(a.compress))
+    print("`algorithm_version`: " .. tostring(a.algorithm_version))
+    print("`use_data_card`: " .. tostring(a.use_data_card))
+    print("`checksum`: " .. tostring(a.checksum))
+    print("`checksum_type`: " .. tostring(a.checksum_type))
+    print("`force_data_card`: " .. tostring(a.force_data_card))
+    print("------------------------------")
+  elseif type == "setting" then
+    if not args[2] then
+      print("No setting selected.")
+      print("Valid settings:")
+      print("  compress")
+      print("  algorithm_version")
+      print("  use_data_card")
+      print("  checksum")
+      print("  checksum_type")
+      print("  force_data_card")
+    else
+      if ops["s"] then
+        --set
+        if not args[3] then
+          print("No value provided.")
+        else
+          print("Changing setting `" .. tostring(args[2]) .. "`")
+          print("Original value: " .. tostring(_G.ocz_settings[args[2]]))
+          print("New value: " .. tostring(args[3]))
+          print("Y to confirm, N to cancel.")
+          local user = (ops["a"] and "Y") or io.read()
+          if user == "y" or user == "Y" then
+            print("Confirmed.")
+            ocz_lib.changeSetting(args[2], require("serialization").unserialize(args[3]))
+          end
+        end
+      else
+        --read
+        local a = _G.ocz_settings[args[2]]
+        if a == nil then
+          print("Invalid, use `ocz setting` to see valid settings.")
+        else
+          print(a)
+        end
+      end
+    end
+  else
+    print("Command not found, use `ocz` to see valid commands.")
   end
 end

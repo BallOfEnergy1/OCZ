@@ -16,32 +16,39 @@
     
   -----------------------------------------------------------------------------------
   
-  _G.ocz_settings.compression:
+  _G.ocz_settings.compression: (default true)
     Determines if the library should compress the data at all.
-    Does not work without a data card.
   
-  _G.ocz_settings.algorithm_version:
+  _G.ocz_settings.algorithm_version: (default 2)
     Sets the version of the algorithm to be used;
-    0 is no compression, for use in tandem with the `use_data_card` setting;
-    1 is inflate/deflate compression;
+    If algorithm 1 is selected while `use_data_card` is false then algorithm 2 will be used by default.
+    0 is no compression;
+    1 is inflate/deflate compression using the data card;
+    2 is LZW compression using the lualzw library.
   
-  _G.ocz_settings.use_data_card:
+  _G.ocz_settings.use_data_card: (default true)
     This setting is to be set to false when a data card is not inserted to keep the program from faulting.
     Errors are caught, but the returns they may give can cause some severe issues. All errors are logged in the logging directory.
-    When this setting is set to false, most program features will be disabled due to the difficulty of implementing certain functions into pure lua.
     *SHA256 checksums will not be supported when this is false.*
-    The MD5 and CRC32 implementation in pure lua will be used instead of the data card version even when enabled.
+    The MD5 and CRC32 implementation in pure lua will be used instead of the data card version even when enabled. This is due to data length limitations.
+    Data card MD5 and CRC32 implementations can be forced using the `force_data_card` setting.
     
-  _G.ocz_settings.checksum:
+  _G.ocz_settings.checksum: (default true)
     This option can be used to enable or disable the checksum for the file.
     Mainly for smaller files that may not need a checksum/increases the size beyond desirable levels.
     
-  _G.ocz_settings.checksum_type:
+  _G.ocz_settings.checksum_type: (default MD5)
     This setting sets the checksum type to be used (active when _G.ocz_settings.checksum is true), possible options are:
-      "MD5"    (128 bit) - Standard hash algorithm, used by default and when data card is disabled.
+      "MD5"    (256 bit) - Standard hash algorithm, used by default and when data card is disabled.
       "SHA256" (256 bit) - Very overkill, takes up a large amount of space, but provides the most amount of protection if storing important data is needed.
       "CRC32"  (32 bit)  - Standard error-detecting hash algorithm, very useful for small files that don't need to be ultra-secure but still need some checksum.
       Note: If SHA256 is selected when the data card option is disabled, the MD5 algorithm will be used instead.
+      SHA256 does not support strings over 4KB/4000 characters.
+
+  _G.ocz_settings.force_data_card: (default false)
+    This setting can be enabled to force the program to use the data card. This can introduce major issues when attempting to compress large files/strings (>4KB).
+    `use_data_card` must be true to use this setting, if a data card is not found then the program WILL fail and throw an uncaught error.
+    Compressing a file/string while this setting is true and then attempting to decompress on a computer without a data card will cause an error.
 ]]--
 
 _G.ocz_settings = {
@@ -49,33 +56,33 @@ _G.ocz_settings = {
     version = "1.0.2",
     override = false,
     check_data = function()
-      local result, _ = require("component").getPrimaryComponent("data")
-      if result then
-        return true
-      else
-        return false
-      end
+      return require("component").isAvailable("data")
     end
   },
   override = {
-    compress = false,
-    algorithm_version = 0,
-    use_data_card = false,
-    checksum = false,
-    checksum_type = "MD5",
+    compress = nil,
+    algorithm_version = nil,
+    use_data_card = nil,
+    checksum = nil,
+    checksum_type = nil,
+    force_data_card = nil,
   },
   compress = true,
-  algorithm_version = 1,
+  algorithm_version = 2,
   use_data_card = true,
   checksum = true,
   checksum_type = "MD5",
+  force_data_card = false,
 }
 
 local fs = require("filesystem")
 local bit32 = require("bit32")
 
 local function log(data, extraError)
-
+  print("Error!")
+  print(data)
+  print("Extra information:")
+  print(extraError or "None.")
 end
 
 local function compileSettings()
@@ -85,7 +92,7 @@ local function compileSettings()
     lowest bit                                                                           highest bit
     1           2 4                   8               16            32 64                128
     0           0 0                   0               0             0  0                 0
-    compress    algorithm_version     use_data_card   checksum      checksum_type        unused
+    compress    algorithm_version     use_data_card   checksum      checksum_type        force_data_card
   ]]--
   local settings = _G.ocz_settings
   local output = 0
@@ -116,9 +123,9 @@ local function compileSettings()
   if settings.checksum_type == "unused" then
     output = output + 2^5 + 2^6
   end
-  --if settings.unused == "unused" then
-  -- output = output + 2^7
-  --end
+  if settings.force_data_card == true then
+   output = output + 2^7
+  end
   return output
 end
 
@@ -137,7 +144,7 @@ local function loadSettings(data)
   else
     _G.ocz_settings.override.compress = false
   end
-  _G.ocz_settings.algorithm_version = bit32.extract(data, 1, 2)
+  _G.ocz_settings.override.algorithm_version = bit32.extract(data, 1, 2)
   if bit32.extract(data, 3) == 1 then
     _G.ocz_settings.override.use_data_card = true
   else
@@ -157,29 +164,34 @@ local function loadSettings(data)
   elseif bit32.extract(data, 5, 2) == 3 then
     _G.ocz_settings.override.checksum_type = "unused"
   end
+  if bit32.extract(data, 7) == 1 then
+    _G.ocz_settings.override.force_data_card = true
+  else
+    _G.ocz_settings.override.force_data_card = false
+  end
 end
 
 local lib = {}
 
 function lib.changeSetting(setting, newValue)
   if setting == "compress" then
-    local result, error = pcall(assert(type(newValue) == "boolean"))
+    local result, error = pcall(function() return assert(type(newValue) == "boolean") end)
     if not result then log("Incorrect type for config, expected `boolean` and got " .. type(newValue), error) end
     _G.ocz_settings.compress = newValue
   elseif setting == "algorithm_version" then
-    local result, error = pcall(assert(type(newValue) == "number"))
+    local result, error = pcall(function() return assert(type(newValue) == "number") end)
     if not result then log("Incorrect type for config, expected `number` and got " .. type(newValue), error) end
     _G.ocz_settings.algorithm_version = newValue
   elseif setting == "use_data_card" then
-    local result, error = pcall(assert(type(newValue) == "boolean"))
+    local result, error = pcall(function() return assert(type(newValue) == "boolean") end)
     if not result then log("Incorrect type for config, expected `boolean` and got " .. type(newValue), error) end
     _G.ocz_settings.use_data_card = newValue
   elseif setting == "checksum" then
-    local result, error = pcall(assert(type(newValue) == "boolean"))
+    local result, error = pcall(function() return assert(type(newValue) == "boolean") end)
     if not result then log("Incorrect type for config, expected `boolean` and got " .. type(newValue), error) end
     _G.ocz_settings.checksum = newValue
   elseif setting == "checksum_type" then
-    local result, error = pcall(assert(type(newValue) == "string"))
+    local result, error = pcall(function() return assert(type(newValue) == "string") end)
     if not result then log("Incorrect type for config, expected `string` and got " .. type(newValue), error) end
     _G.ocz_settings.checksum_type = newValue
   end
@@ -196,10 +208,10 @@ function lib.compress(data)
   if not settings.use_data_card then
     -- do not use data card
     if settings.checksum and (settings.checksum_type == "MD5" or settings.checksum_type == "SHA256") then
-      local md5 = require("/lib/OCZ_lib/md5.lua")
+      local md5 = require("ocz-lib/md5")
       output = output .. tostring(md5.sumhexa(data))
     elseif settings.checksum and settings.checksum_type == "CRC32" then
-      local crc = require("/lib/OCZ_lib/crc32.lua")
+      local crc = require("ocz-lib/crc32")
       local i, a = 0, ""
       while i < 32 do
         a = require("bit32").extract(crc:Crc32(data), i, math.min(8, 32-i))
@@ -212,29 +224,44 @@ function lib.compress(data)
   else
     -- use data card
     if not _G.ocz_settings.prog.check_data() then
-      log("Failed during compression: " .. error)
+      log("No data card found when attempting to use a data card functionality. Check _G.ocz_settings")
       return false
     else
       local dc = require("component").data
       if settings.checksum == true then
         if settings.checksum_type == "MD5" then
-          local md5 = require("/lib/OCZ_lib/md5.lua")
-          output = output .. tostring(md5.sumhexa(data))
+          if _G.ocz_settings.force_data_card then
+            output = output .. dc.md5(data)
+          else
+            local md5 = require("ocz-lib/md5")
+            output = output .. tostring(md5.sumhexa(data))
+          end
         elseif settings.checksum_type == "SHA256" then
           output = output .. tostring(dc.encode64(dc.sha256(data)))
         elseif settings.checksum_type == "CRC32" then
-          local crc = require("/lib/OCZ_lib/crc32.lua")
-          local i, a = 0, ""
-          while i < 32 do
-            a = require("bit32").extract(crc:Crc32(data), i, math.min(8, 32-i))
-            output = string.char(a) .. output
-            i = i + 8
+          if _G.ocz_settings.force_data_card then
+            output = output .. dc.crc32(data)
+          else
+            local crc = require("ocz-lib/crc32")
+            local i, a = 0, ""
+            while i < 32 do
+              a = require("bit32").extract(crc:Crc32(data), i, math.min(8, 32-i))
+              output = string.char(a) .. output
+              i = i + 8
+            end
           end
         end
       end
       if settings.compress then
         if settings.algorithm_version == 1 then -- allow for adding more versions soon
           output = output .. dc.encode64(dc.deflate(data))
+        elseif settings.algorithm_version == 2 then
+          if _G.ocz_settings.force_data_card then
+            output = output .. dc.encode64(dc.deflate(data)) -- use algorithm_version 1
+          else
+            local lualzw = require("ocz-lib/lualzw")
+            output = output .. lualzw.compress(data)
+          end
         end
       elseif settings.algorithm_version == 0 or not settings.compress then
         output = output .. data -- AAAAAAAA no compression
@@ -253,35 +280,38 @@ function lib.decompress(data, toss)
   if data then
     local second = true
     data = tostring(data)
-    local a = string.sub(data, 0, 10)
+    local a = string.sub(data, 1, 10)
     if not (a == "OCZFormat-") then
       log("Malformed file, `OCZFormat-` header missing at beginning of file.")
       return false
     end
-    data = string.sub(data, 10) -- remove format header
-    local settings = require("bit32").extract(data, 0, 8) -- extract setting bits
+    data = string.sub(data, 11) -- remove format header
+    local settings = require("bit32").extract(string.byte(string.sub(data, 1, 1)), 0, 8) -- extract setting bits
     loadSettings(settings) -- load settings from file into override variables
-    data = string.sub(data, 1) -- remove setting bits
+    data = string.sub(data, 2) -- remove setting bits
     if _G.ocz_settings.override.use_data_card
       and not _G.ocz_settings.prog.check_data()
-      and (_G.ocz_settings.override.compress
-      or not (_G.ocz_settings.override.algorithm_version == 0)
+      and (not (_G.ocz_settings.override.algorithm_version == 1)
       or _G.ocz_settings.override.checksum_type == "SHA256") then -- check if a data card must be present to decompress
-        log("Unable to decompress, a data card must be present to decompress this file.")
-        return "", false
+      log("Unable to decompress, a data card must be present to decompress this file.")
+      return "", false
     end
     local dc = require("component").data
     if _G.ocz_settings.override.checksum then
       local checksum = ""
       if _G.ocz_settings.override.checksum_type == "MD5" then
-        local md5 = require("/lib/OCZ_lib/md5.lua")
-        checksum = tostring(md5.sumhexa(data))
-        if checksum ~= string.sub(data, 16) then
+        if _G.ocz_settings.override.force_data_card then
+          checksum = tostring(dc.md5(data))
+        else
+          local md5 = require("ocz-lib/md5")
+          checksum = tostring(md5.sumhexa(data))
+        end
+        if checksum ~= string.sub(data, 32) then
           if toss then
             return "", false
           else
             second = false
-            data = string.sub(data, 16)
+            data = string.sub(data, 33)
           end
         end
       elseif _G.ocz_settings.override.checksum_type == "SHA256" then
@@ -291,39 +321,50 @@ function lib.decompress(data, toss)
             return "", false
           else
             second = false
-            data = string.sub(data, 32)
+            data = string.sub(data, 33)
           end
         end
       elseif _G.ocz_settings.override.checksum_type == "CRC32" then
-        local crc = require("/lib/OCZ_lib/crc32.lua")
-        local i, b = 0, ""
-        while i < 32 do
-          b = require("bit32").extract(crc:Crc32(data), i, math.min(8, 32-i))
-          checksum = string.char(b) .. checksum
-          i = i + 8
+        if _G.ocz_settings.override.force_data_card then
+          checksum = dc.crc32(data)
+        else
+          local crc = require("ocz-lib/crc32")
+          local i, b = 0, ""
+          while i < 32 do
+            b = require("bit32").extract(crc:Crc32(data), i, math.min(8, 32-i))
+            checksum = string.char(b) .. checksum
+            i = i + 8
+          end
         end
         if checksum ~= string.sub(data, 4) then
           if toss then
             return "", false
           else
             second = false
-            data = string.sub(data, 4)
+            data = string.sub(data, 5)
           end
         end
       end--elseif _G.ocz_settings.override.checksum_type == "unused" then
-        --soon:tm:
+      --soon:tm:
       --end
     end
+    local output
     if _G.ocz_settings.override.compress then
-      data = dc.deflate(dc.decode64(data))
-      if data == nil or data == "" then
-        log("Warning: Unless you compressed an empty string, something has gone wrong! Data returned after decompressing is `\"\"` or `nil`.")
+      if _G.ocz_settings.override.algorithm_version == 1 then
+        output = dc.inflate(dc.decode64(data))
+        if output == nil or output == "" then
+          log("Warning: Unless you compressed an empty string, something has gone wrong! Data returned after decompressing is `\"\"` or `nil`.")
+        end
+      elseif _G.ocz_settings.override.algorithm_version == 2 then
+        local lualzw = require("ocz-lib/lualzw")
+        output = lualzw.decompress(data)
       end
-      return data, second
     end
+    return output, second
+  else
+    log("No data to decompress.")
+    return "", nil
   end
-  log("No data to decompress.")
-  return "", nil
 end
 
 --- Compresses a file and writes contents back to the new location; if nil no data is written.
@@ -338,6 +379,9 @@ function lib.compressFile(filePath, newFilePath)
   local data = readHandle:read("*a")
   local compressedData = lib.compress(data)
   readHandle:close()
+  if type(compressedData) ~= "string" then
+    return false
+  end
   if newFilePath then
     pcall(fs.remove(newFilePath))
     local writeHandle = io.open(newFilePath, "w")
@@ -356,23 +400,30 @@ function lib.decompressFile(filePath, newFilePath)
   local compressedData = readHandle:read("*a")
   local data = lib.decompress(compressedData)
   readHandle:close()
+  if type(data) ~= "string" then
+    return false
+  end
   if newFilePath then
     pcall(fs.remove(newFilePath))
     local writeHandle = io.open(newFilePath, "w")
     writeHandle:write(data)
     writeHandle:close()
   end
-  return compressedData
+  return data
 end
 
 --- Decompresses a file and directly runs the result; does not check for valid Lua 5.3 code.
 --- @param filePath string File path of the file to be executed.
---- @param ... any|nil Arguments to be passed to the program being executed.
 --- @return any Results of the program.
-function lib.runCompressedFile(filePath, ...)
+function lib.runCompressedFile(filePath)
   local data = lib.decompressFile(filePath, nil)
-  local program = load(data, "OCZ_run", "bt", ...) -- uh oh!
-  return program()
+  local program, err = load(data) -- uh oh!
+  if not program then
+    log("Failed to execute: " .. (err or "Unknown"))
+    return false
+  else
+    return program()
+  end
 end
 
 return lib
