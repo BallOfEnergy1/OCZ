@@ -24,25 +24,56 @@ else
       print("File '" .. args[2] .. "' not found.")
       return true
     else
-      print("OCZ Compression")
-      print("Ready: ")
-      print("Compress file: '" .. args[2] .. "'.")
-      print("Destination: '" .. (args[3] or args[2]) .. "'.")
-      print("Y to confirm, N to cancel.")
-      local user = (ops["a"] and "Y") or io.read()
-      if user == "y" or user == "Y" then
-        print("Compression starting...")
-        local time1 = os.time() * (1000/60/60) * 20
-        local result = ocz_lib.compressFile(args[2], args[3] or args[2])
-        if not result then
-          print("Compression failed.")
+      if require("filesystem").isDirectory(args[2]) then
+        if not args[3] then
+          print("No output directory provided.")
           return true
         end
-        local time2 = os.time() * (1000/60/60) * 20
-        print("Compression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
+        print("OCZ Recursive compression")
+        print("Ready: ")
+        print("Compress directory: '" .. args[2] .. "'.")
+        print("Destination directory: '" .. args[3] .. "'.")
+        print("Y to confirm, N to cancel.")
+        local user = (ops["a"] and "Y") or io.read()
+        if user == "y" or user == "Y" then
+          print("Recursive compression starting...")
+          local time1 = os.time() * (1000/60/60) * 20
+          local result, a = ocz_lib.recursiveCompress(args[2], args[3] or args[2])
+          if a == 1 then
+            print("Cannot compress, attempting to write to source directory.")
+            return true
+          end
+          if not result then
+            print("Compression failed.")
+            return true
+          end
+          local time2 = os.time() * (1000/60/60) * 20
+          print("Recursive compression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
+        else
+          print("Canceled.")
+          return true
+        end
       else
-        print("Canceled.")
-        return true
+        print("OCZ Compression")
+        print("Ready: ")
+        print("Compress file: '" .. args[2] .. "'.")
+        print("Destination: '" .. (args[3] or args[2]) .. "'.")
+        print("Y to confirm, N to cancel.")
+        local user = (ops["a"] and "Y") or io.read()
+        if user == "y" or user == "Y" then
+          print("Compression starting...")
+          local time1 = os.time() * (1000/60/60) * 20
+          local result = ocz_lib.compressFile(args[2], args[3] or args[2])
+          if not result then
+            print("Compression failed.")
+            return true
+          end
+          local time2 = os.time() * (1000/60/60) * 20
+          print("Compression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
+        else
+          print("Canceled.")
+          return true
+        end
       end
     end
   elseif type == "decompress" then
@@ -53,25 +84,56 @@ else
       print("File '" .. args[2] .. "' not found.")
       return true
     else
-      print("OCZ Decompression")
-      print("Ready: ")
-      print("Decompress file: '" .. args[2] .. "'.")
-      print("Destination: '" .. (args[3] or args[2]) .. "'.")
-      print("Y to confirm, N to cancel.")
-      local user = (ops["a"] and "Y") or io.read()
-      if user == "y" or user == "Y" then
-        print("Decompression starting...")
-        local time1 = os.time() * (1000/60/60) * 20
-        local result = ocz_lib.decompressFile(args[2], args[3] or args[2])
-        if not result then
-          print("Decompression failed.")
+      if require("filesystem").isDirectory(args[2]) then
+        if not args[3] then
+          print("No output directory provided.")
           return true
         end
-        local time2 = os.time() * (1000/60/60) * 20
-        print("Decompression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
+        print("OCZ Recursive Decompression")
+        print("Ready: ")
+        print("Decompress directory: '" .. args[2] .. "'.")
+        print("Destination directory: '" .. args[3] .. "'.")
+        print("Y to confirm, N to cancel.")
+        local user = (ops["a"] and "Y") or io.read()
+        if user == "y" or user == "Y" then
+          print("Recursive decompression starting...")
+          local time1 = os.time() * (1000/60/60) * 20
+          local result, a = ocz_lib.recursiveDecompress(args[2], args[3])
+          if a == 1 then
+            print("Cannot compress, attempting to write to source directory.")
+            return true
+          end
+          if not result then
+            print("Recursive decompression failed.")
+            return true
+          end
+          local time2 = os.time() * (1000/60/60) * 20
+          print("Recursive decompression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
+        else
+          print("Canceled.")
+          return true
+        end
       else
-        print("Canceled.")
-        return true
+        print("OCZ Decompression")
+        print("Ready: ")
+        print("Decompress file: '" .. args[2] .. "'.")
+        print("Destination: '" .. (args[3] or args[2]) .. "'.")
+        print("Y to confirm, N to cancel.")
+        local user = (ops["a"] and "Y") or io.read()
+        if user == "y" or user == "Y" then
+          print("Decompression starting...")
+          local time1 = os.time() * (1000/60/60) * 20
+          local result = ocz_lib.decompressFile(args[2], args[3] or args[2])
+          if not result then
+            print("Decompression failed.")
+            return true
+          end
+          local time2 = os.time() * (1000/60/60) * 20
+          print("Decompression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
+        else
+          print("Canceled.")
+          return true
+        end
       end
     end
   elseif type == "run" then

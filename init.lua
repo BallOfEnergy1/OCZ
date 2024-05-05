@@ -412,6 +412,93 @@ function lib.decompressFile(filePath, newFilePath)
   return data
 end
 
+local function checkForRecursion(path, newPath)
+  while #newPath > 0 do
+    if path == newPath then
+      return true
+    else
+      newPath = string.sub(newPath, 1, #newPath - 1)
+    end
+  end
+  return false
+end
+
+--- Compresses files recursively and writes to the new directory.
+--- @param directoryPath string Path of the directory to be compressed.
+--- @param newDirectoryPath string|nil Path to the directory to output compressed data.
+--- @return boolean True if success, false if failed.
+function lib.recursiveCompress(directoryPath, newDirectoryPath)
+  if checkForRecursion(directoryPath, newDirectoryPath) then
+    return false, 1
+  end
+  if not newDirectoryPath then
+    return false
+  end
+  if not fs.exists(newDirectoryPath) or not fs.isDirectory(newDirectoryPath) then
+    fs.makeDirectory(newDirectoryPath)
+  end
+  if fs.isDirectory(directoryPath) then
+    local toRecurse = {}
+    for file in fs.list(directoryPath) do
+      while string.sub(file, -1) == "/" do
+        file = string.sub(file, 1, #file - 1)
+      end
+      if not fs.isDirectory(directoryPath .. "/" .. file) then
+        lib.compressFile(directoryPath .. "/" .. file, newDirectoryPath .. "/" .. file)
+      else
+        table.insert(toRecurse, file)
+      end
+      if #toRecurse > 0 then
+        for i, v in pairs(toRecurse) do
+          lib.recursiveCompress(directoryPath .. "/" .. v, newDirectoryPath .. "/" .. v)
+        end
+      else
+        return true
+      end
+    end
+  else
+    return false
+  end
+end
+
+--- Decompresses files recursively and writes to the new directory.
+--- @param directoryPath string Path of the directory to be decompressed.
+--- @param newDirectoryPath string|nil Path to the directory to output decompressed data.
+--- @return boolean True if success, false if failed.
+function lib.recursiveDecompress(directoryPath, newDirectoryPath)
+  if checkForRecursion(directoryPath, newDirectoryPath) then
+    return false, 1
+  end
+  if not newDirectoryPath then
+    return false
+  end
+  if not fs.exists(newDirectoryPath) or not fs.isDirectory(newDirectoryPath) then
+    fs.makeDirectory(newDirectoryPath)
+  end
+  if fs.isDirectory(directoryPath) then
+    local toRecurse = {}
+    for file in fs.list(directoryPath) do
+      while string.sub(file, -1) == "/" do
+        file = string.sub(file, 1, #file - 1)
+      end
+      if not fs.isDirectory(directoryPath .. "/" .. file) then
+        lib.compressFile(directoryPath .. "/" .. file, newDirectoryPath .. "/" .. file)
+      else
+        table.insert(toRecurse, file)
+      end
+      if #toRecurse > 0 then
+        for i, v in pairs(toRecurse) do
+          lib.recursiveCompress(directoryPath .. "/" .. v, newDirectoryPath .. "/" .. v)
+        end
+      else
+        return true
+      end
+    end
+  else
+    return false
+  end
+end
+
 --- Decompresses a file and directly runs the result; does not check for valid Lua 5.3 code.
 --- @param filePath string File path of the file to be executed.
 --- @return any Results of the program.
