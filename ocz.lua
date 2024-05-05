@@ -244,6 +244,7 @@ else
     print("`force_data_card`: " .. tostring(override.force_data_card))
     print("------------------------------")
     print("Program public values:")
+    print("`disable_compressed_run`: " .. tostring(a.disable_compressed_run))
     print("`compress`: " .. tostring(a.compress))
     print("`algorithm_version`: " .. tostring(a.algorithm_version))
     print("`use_data_card`: " .. tostring(a.use_data_card))

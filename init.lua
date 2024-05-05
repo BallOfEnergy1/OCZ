@@ -1,60 +1,8 @@
-
---[[
-
-  To change compression settings, you must set these in your program in the correct format.
-  If invalid values are given to the `changeSetting()` function, then the value will not be changed and an error will be logged in the logging directory.
-  It is suggested to use the `changeSetting()` function instead of setting the variables directly to ensure that incorrect values are not inserted.
-  
-  
-  ---Do not modify these or anything inside of them to avoid breaking the library.---
-  
-  _G.ocz_settings.prog:
-    Contains important global variables for the library to use.
-    
-  _G.ocz_settings.override:
-    Contains override settings for use during decompression.
-    
-  -----------------------------------------------------------------------------------
-  
-  _G.ocz_settings.compression: (default true)
-    Determines if the library should compress the data at all.
-  
-  _G.ocz_settings.algorithm_version: (default 2)
-    Sets the version of the algorithm to be used;
-    If algorithm 1 is selected while `use_data_card` is false then algorithm 2 will be used by default.
-    0 is no compression;
-    1 is inflate/deflate compression using the data card;
-    2 is LZW compression using the lualzw library.
-  
-  _G.ocz_settings.use_data_card: (default true)
-    This setting is to be set to false when a data card is not inserted to keep the program from faulting.
-    Errors are caught, but the returns they may give can cause some severe issues. All errors are logged in the logging directory.
-    *SHA256 checksums will not be supported when this is false.*
-    The MD5 and CRC32 implementation in pure lua will be used instead of the data card version even when enabled. This is due to data length limitations.
-    Data card MD5 and CRC32 implementations can be forced using the `force_data_card` setting.
-    
-  _G.ocz_settings.checksum: (default true)
-    This option can be used to enable or disable the checksum for the file.
-    Mainly for smaller files that may not need a checksum/increases the size beyond desirable levels.
-    
-  _G.ocz_settings.checksum_type: (default MD5)
-    This setting sets the checksum type to be used (active when _G.ocz_settings.checksum is true), possible options are:
-      "MD5"    (256 bit) - Standard hash algorithm, used by default and when data card is disabled.
-      "SHA256" (256 bit) - Very overkill, takes up a large amount of space, but provides the most amount of protection if storing important data is needed.
-      "CRC32"  (32 bit)  - Standard error-detecting hash algorithm, very useful for small files that don't need to be ultra-secure but still need some checksum.
-      Note: If SHA256 is selected when the data card option is disabled, the MD5 algorithm will be used instead.
-      SHA256 does not support strings over 4KB/4000 characters.
-
-  _G.ocz_settings.force_data_card: (default false)
-    This setting can be enabled to force the program to use the data card. This can introduce major issues when attempting to compress large files/strings (>4KB).
-    `use_data_card` must be true to use this setting, if a data card is not found then the program WILL fail and throw an uncaught error.
-    Compressing a file/string while this setting is true and then attempting to decompress on a computer without a data card will cause an error.
-]]--
-
 _G.ocz_settings = {
   prog = {
     version = "1.0.2",
     override = false,
+    disable_compressed_run = false,
     check_data = function()
       return require("component").isAvailable("data")
     end
@@ -194,6 +142,10 @@ function lib.changeSetting(setting, newValue)
     local result, error = pcall(function() return assert(type(newValue) == "string") end)
     if not result then log("Incorrect type for config, expected `string` and got " .. type(newValue), error) end
     _G.ocz_settings.checksum_type = newValue
+  elseif setting == "disable_compressed_run" then
+    local result, error = pcall(function() return assert(type(newValue) == "boolean") end)
+    if not result then log("Incorrect type for config, expected `boolean` and got " .. type(newValue), error) end
+    _G.ocz_settings.disable_compressed_run = newValue
   end
 end
 
