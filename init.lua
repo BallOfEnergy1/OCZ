@@ -208,10 +208,10 @@ function lib.compress(data)
   if not settings.use_data_card then
     -- do not use data card
     if settings.checksum and (settings.checksum_type == "MD5" or settings.checksum_type == "SHA256") then
-      local md5 = require("ocz-lib/md5")
+      local md5 = require("ocz/md5")
       output = output .. tostring(md5.sumhexa(data))
     elseif settings.checksum and settings.checksum_type == "CRC32" then
-      local crc = require("ocz-lib/crc32")
+      local crc = require("ocz/crc32")
       local i, a = 0, ""
       while i < 32 do
         a = require("bit32").extract(crc:Crc32(data), i, math.min(8, 32-i))
@@ -233,7 +233,7 @@ function lib.compress(data)
           if _G.ocz_settings.force_data_card then
             output = output .. dc.md5(data)
           else
-            local md5 = require("ocz-lib/md5")
+            local md5 = require("ocz/md5")
             output = output .. tostring(md5.sumhexa(data))
           end
         elseif settings.checksum_type == "SHA256" then
@@ -242,7 +242,7 @@ function lib.compress(data)
           if _G.ocz_settings.force_data_card then
             output = output .. dc.crc32(data)
           else
-            local crc = require("ocz-lib/crc32")
+            local crc = require("ocz/crc32")
             local i, a = 0, ""
             while i < 32 do
               a = require("bit32").extract(crc:Crc32(data), i, math.min(8, 32-i))
@@ -259,7 +259,7 @@ function lib.compress(data)
           if _G.ocz_settings.force_data_card then
             output = output .. dc.encode64(dc.deflate(data)) -- use algorithm_version 1
           else
-            local lualzw = require("ocz-lib/lualzw")
+            local lualzw = require("ocz/lualzw")
             output = output .. lualzw.compress(data)
           end
         end
@@ -303,7 +303,7 @@ function lib.decompress(data, toss)
         if _G.ocz_settings.override.force_data_card then
           checksum = tostring(dc.md5(data))
         else
-          local md5 = require("ocz-lib/md5")
+          local md5 = require("ocz/md5")
           checksum = tostring(md5.sumhexa(data))
         end
         if checksum ~= string.sub(data, 32) then
@@ -328,7 +328,7 @@ function lib.decompress(data, toss)
         if _G.ocz_settings.override.force_data_card then
           checksum = dc.crc32(data)
         else
-          local crc = require("ocz-lib/crc32")
+          local crc = require("ocz/crc32")
           local i, b = 0, ""
           while i < 32 do
             b = require("bit32").extract(crc:Crc32(data), i, math.min(8, 32-i))
@@ -356,7 +356,7 @@ function lib.decompress(data, toss)
           log("Warning: Unless you compressed an empty string, something has gone wrong! Data returned after decompressing is `\"\"` or `nil`.")
         end
       elseif _G.ocz_settings.override.algorithm_version == 2 then
-        local lualzw = require("ocz-lib/lualzw")
+        local lualzw = require("ocz/lualzw")
         output = lualzw.decompress(data)
       end
     end
