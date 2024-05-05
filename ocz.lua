@@ -44,7 +44,7 @@ else
             return true
           end
           if not result then
-            print("Compression failed.")
+            print("Recursive compression failed.")
             return true
           end
           local time2 = os.time() * (1000/60/60) * 20

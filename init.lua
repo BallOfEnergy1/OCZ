@@ -448,13 +448,13 @@ function lib.recursiveCompress(directoryPath, newDirectoryPath)
       else
         table.insert(toRecurse, file)
       end
-      if #toRecurse > 0 then
-        for i, v in pairs(toRecurse) do
-          lib.recursiveCompress(directoryPath .. "/" .. v, newDirectoryPath .. "/" .. v)
-        end
-      else
-        return true
+    end
+    if #toRecurse > 0 then
+      for _, v in pairs(toRecurse) do
+        lib.recursiveCompress(directoryPath .. "/" .. v, newDirectoryPath .. "/" .. v)
       end
+    else
+      return true
     end
   else
     return false
@@ -482,17 +482,17 @@ function lib.recursiveDecompress(directoryPath, newDirectoryPath)
         file = string.sub(file, 1, #file - 1)
       end
       if not fs.isDirectory(directoryPath .. "/" .. file) then
-        lib.compressFile(directoryPath .. "/" .. file, newDirectoryPath .. "/" .. file)
+        lib.decompressFile(directoryPath .. "/" .. file, newDirectoryPath .. "/" .. file)
       else
         table.insert(toRecurse, file)
       end
-      if #toRecurse > 0 then
-        for i, v in pairs(toRecurse) do
-          lib.recursiveCompress(directoryPath .. "/" .. v, newDirectoryPath .. "/" .. v)
-        end
-      else
-        return true
+    end
+    if #toRecurse > 0 then
+      for _, v in pairs(toRecurse) do
+        lib.recursiveDecompress(directoryPath .. "/" .. v, newDirectoryPath .. "/" .. v)
       end
+    else
+      return true
     end
   else
     return false
