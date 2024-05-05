@@ -1,7 +1,7 @@
 
 local args, ops = require("shell").parse(...)
 
-local ocz_lib = require("ocz-lib")
+local ocz_lib = require("ocz")
 
 if args[1] == nil then
   print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
