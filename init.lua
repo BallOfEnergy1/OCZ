@@ -195,10 +195,10 @@ function lib.compress(data)
   output = output .. string.char(compileSettings()) -- compile settings into file header
   if not settings.use_data_card then
     -- do not use data card
-    if settings.checksum == true and (settings.checksum_type == "MD5" or settings.checksum_type == "SHA256") then
+    if settings.checksum and (settings.checksum_type == "MD5" or settings.checksum_type == "SHA256") then
       local md5 = require("/lib/OCZ_lib/md5.lua")
       output = output .. tostring(md5.sumhexa(data))
-    elseif settings.checksum == true and settings.checksum_type == "CRC32" then
+    elseif settings.checksum and settings.checksum_type == "CRC32" then
       local crc = require("/lib/OCZ_lib/crc32.lua")
       local i, a = 0, ""
       while i < 32 do

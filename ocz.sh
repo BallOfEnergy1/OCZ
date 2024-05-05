@@ -1,7 +1,11 @@
 
 local args, ops = require("shell").parse(...)
 
-local ocz_lib = require("OCZ_lib")
+local ocz_lib = require("ocz-lib")
+
+local function parseTable()
+
+end
 
 if args == {} then
   print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
@@ -28,7 +32,13 @@ else
       print("Compress file: '" .. args[2] .. "'.")
       print("Destination: '" .. args[3] or args[2] .. "'.")
       print("Y to confirm, N to cancel.")
-      local user = io.read()
+      local i = 0
+      for _, v in pairs(ops) do
+        if v == "a" then
+          user = "Y"
+        end
+        i = i + 1
+      end
       if user == "y" or user == "Y" then
         print("Compression starting...")
         local time1 = os.time() * (1000/60/60) * 20
