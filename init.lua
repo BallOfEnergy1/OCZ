@@ -328,6 +328,8 @@ function lib.compressFile(filePath, newFilePath)
   if not newFilePath then
     newFilePath = filePath
   end
+  local before, after = 0, 0
+  before = before + fs.size(filePath)
   local readHandle = io.open(filePath, "r")
   local data = readHandle:read("*a")
   local compressedData = lib.compress(data)
@@ -354,8 +356,10 @@ function lib.compressFile(filePath, newFilePath)
     local writeHandle = io.open(newFilePath, "w")
     writeHandle:write(compressedData)
     writeHandle:close()
+    after = after + fs.size(newFilePath)
   end
-  return compressedData
+  after = string.len(compressedData)
+  return compressedData, before, after
 end
 
 --- Decompresses a file and writes result to `newFilePath`; if nil no data is written.
@@ -400,7 +404,9 @@ local function getAllFiles(dir)
       file = string.sub(file, 1, #file - 1)
     end
     if fs.isDirectory(dir .. "/" .. file) then
-      table.insert(toRecurse, file)
+      if string.sub(dir .. "/" .. file, 1, 4) ~= "/dev" and string.sub(dir .. "/" .. file, 1, 5) ~= "//dev" then -- blacklist /dev from being compressed due to things like /dev/random
+        table.insert(toRecurse, file)
+      end
     else
       table.insert(_G.ocz_settings.prog.file_table, dir .. "/" .. file)
     end
@@ -418,6 +424,7 @@ end
 --- @param newDirectoryPath string|nil Path to the directory to output compressed data.
 --- @return boolean True if success, false if failed.
 function lib.recursiveCompress(directoryPath, newDirectoryPath)
+  local before, after = 0, 0
   _G.ocz_settings.prog.file_table = {}
   local files = getAllFiles(directoryPath)
   if not newDirectoryPath then
@@ -428,13 +435,14 @@ function lib.recursiveCompress(directoryPath, newDirectoryPath)
   end
   if fs.isDirectory(directoryPath) then
     for _, v in pairs(files) do
-      lib.compressFile(v, newDirectoryPath .. "/" .. v)
+      local _, b, a = lib.compressFile(v, newDirectoryPath .. "/" .. v)
+      before = before + b
+      after = after + a
     end
   else
     return false
   end
-  
-  return true
+  return true, before, after
 end
 
 --- Decompresses files recursively and writes to the new directory.

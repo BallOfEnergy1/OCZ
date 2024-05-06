@@ -38,17 +38,16 @@ else
         if user == "y" or user == "Y" then
           print("Recursive compression starting...")
           local time1 = os.time() * (1000/60/60) * 20
-          local result, a = ocz_lib.recursiveCompress(args[2], args[3] or args[2])
-          if a == 1 then
-            print("Cannot compress, attempting to write to source directory.")
-            return true
-          end
+          local result, b, a = ocz_lib.recursiveCompress(args[2], args[3] or args[2])
           if not result then
             print("Recursive compression failed.")
             return true
           end
           local time2 = os.time() * (1000/60/60) * 20
-          print("Recursive compression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
+          print("Recursive compression complete in " .. tostring(math.floor(time2-time1)) .. "ms.")
+          print("Pre-compressed size: " .. tostring(b/1000) .. "KB")
+          print("Post-compressed size: " .. tostring(a/1000) .. "KB")
+          print("Compression ratio: " .. string.sub(tostring(b/a), 1, 6))
         else
           print("Canceled.")
           return true
@@ -63,13 +62,16 @@ else
         if user == "y" or user == "Y" then
           print("Compression starting...")
           local time1 = os.time() * (1000/60/60) * 20
-          local result = ocz_lib.compressFile(args[2], args[3] or args[2])
+          local result, b, a = ocz_lib.compressFile(args[2], args[3] or args[2])
           if not result then
             print("Compression failed.")
             return true
           end
           local time2 = os.time() * (1000/60/60) * 20
-          print("Compression complete, took (" .. tostring(math.floor(time2-time1)) .. "ms).")
+          print("Recursive compression complete in " .. tostring(math.floor(time2-time1)) .. "ms.")
+          print("Pre-compressed size: " .. tostring(b/1000) .. "KB")
+          print("Post-compressed size: " .. tostring(a/1000) .. "KB")
+          print("Compression ratio: " .. string.sub(tostring(b/a), 1, 6))
         else
           print("Canceled.")
           return true
