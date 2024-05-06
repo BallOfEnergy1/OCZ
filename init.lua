@@ -2,7 +2,7 @@ _G.ocz_settings = {
   prog = {
     version = "1.0.2",
     override = false,
-    disable_compressed_run = false,
+    file_table = {},
     check_data = function()
       return require("component").isAvailable("data")
     end
@@ -21,6 +21,7 @@ _G.ocz_settings = {
   checksum = true,
   checksum_type = "MD5",
   force_data_card = false,
+  disable_compressed_run = false,
 }
 
 local fs = require("filesystem")
@@ -335,6 +336,20 @@ function lib.compressFile(filePath, newFilePath)
     return false
   end
   if newFilePath then
+    if not fs.exists(newFilePath) then
+      local a = newFilePath
+      while string.sub(a, -1) ~= "/" do
+        a = string.sub(a, 1, #a - 1)
+      end
+      fs.makeDirectory(a)
+    end
+    if string.find(newFilePath, ".", 1, true) then
+      while string.sub(newFilePath, -1) ~= "." do
+        newFilePath = string.sub(newFilePath, 1, #newFilePath - 1)
+      end
+      newFilePath = string.sub(newFilePath, 1, #newFilePath - 1)
+    end
+    newFilePath = newFilePath .. ".ocz"
     pcall(fs.remove(newFilePath))
     local writeHandle = io.open(newFilePath, "w")
     writeHandle:write(compressedData)
@@ -356,6 +371,20 @@ function lib.decompressFile(filePath, newFilePath)
     return false
   end
   if newFilePath then
+    if not fs.exists(newFilePath) then
+      local a = newFilePath
+      while string.sub(a, -1) ~= "/" do
+        a = string.sub(a, 1, #a - 1)
+      end
+      fs.makeDirectory(a)
+    end
+    if string.find(newFilePath, ".", 1, true) then
+      while string.sub(newFilePath, -1) ~= "." do
+        newFilePath = string.sub(newFilePath, 1, #newFilePath - 1)
+      end
+      newFilePath = string.sub(newFilePath, 1, #newFilePath - 1)
+    end
+    newFilePath = newFilePath .. ".data"
     pcall(fs.remove(newFilePath))
     local writeHandle = io.open(newFilePath, "w")
     writeHandle:write(data)
@@ -364,15 +393,24 @@ function lib.decompressFile(filePath, newFilePath)
   return data
 end
 
-local function checkForRecursion(path, newPath)
-  while #newPath > 0 do
-    if path == newPath then
-      return true
+local function getAllFiles(dir)
+  local toRecurse = {}
+  for file in fs.list(dir) do
+    while string.sub(file, -1) == "/" do
+      file = string.sub(file, 1, #file - 1)
+    end
+    if fs.isDirectory(dir .. "/" .. file) then
+      table.insert(toRecurse, file)
     else
-      newPath = string.sub(newPath, 1, #newPath - 1)
+      table.insert(_G.ocz_settings.prog.file_table, dir .. "/" .. file)
     end
   end
-  return false
+  if #toRecurse > 0 then
+    for _, v in pairs(toRecurse) do
+      getAllFiles(dir .. "/" .. v)
+    end
+  end
+  return _G.ocz_settings.prog.file_table
 end
 
 --- Compresses files recursively and writes to the new directory.
@@ -380,9 +418,8 @@ end
 --- @param newDirectoryPath string|nil Path to the directory to output compressed data.
 --- @return boolean True if success, false if failed.
 function lib.recursiveCompress(directoryPath, newDirectoryPath)
-  if checkForRecursion(directoryPath, newDirectoryPath) then
-    return false, 1
-  end
+  _G.ocz_settings.prog.file_table = {}
+  local files = getAllFiles(directoryPath)
   if not newDirectoryPath then
     return false
   end
@@ -390,27 +427,14 @@ function lib.recursiveCompress(directoryPath, newDirectoryPath)
     fs.makeDirectory(newDirectoryPath)
   end
   if fs.isDirectory(directoryPath) then
-    local toRecurse = {}
-    for file in fs.list(directoryPath) do
-      while string.sub(file, -1) == "/" do
-        file = string.sub(file, 1, #file - 1)
-      end
-      if not fs.isDirectory(directoryPath .. "/" .. file) then
-        lib.compressFile(directoryPath .. "/" .. file, newDirectoryPath .. "/" .. file)
-      else
-        table.insert(toRecurse, file)
-      end
-    end
-    if #toRecurse > 0 then
-      for _, v in pairs(toRecurse) do
-        lib.recursiveCompress(directoryPath .. "/" .. v, newDirectoryPath .. "/" .. v)
-      end
-    else
-      return true
+    for _, v in pairs(files) do
+      lib.compressFile(v, newDirectoryPath .. "/" .. v)
     end
   else
     return false
   end
+  
+  return true
 end
 
 --- Decompresses files recursively and writes to the new directory.
@@ -418,9 +442,8 @@ end
 --- @param newDirectoryPath string|nil Path to the directory to output decompressed data.
 --- @return boolean True if success, false if failed.
 function lib.recursiveDecompress(directoryPath, newDirectoryPath)
-  if checkForRecursion(directoryPath, newDirectoryPath) then
-    return false, 1
-  end
+  _G.ocz_settings.prog.file_table = {}
+  local files = getAllFiles(directoryPath)
   if not newDirectoryPath then
     return false
   end
@@ -428,27 +451,13 @@ function lib.recursiveDecompress(directoryPath, newDirectoryPath)
     fs.makeDirectory(newDirectoryPath)
   end
   if fs.isDirectory(directoryPath) then
-    local toRecurse = {}
-    for file in fs.list(directoryPath) do
-      while string.sub(file, -1) == "/" do
-        file = string.sub(file, 1, #file - 1)
-      end
-      if not fs.isDirectory(directoryPath .. "/" .. file) then
-        lib.decompressFile(directoryPath .. "/" .. file, newDirectoryPath .. "/" .. file)
-      else
-        table.insert(toRecurse, file)
-      end
-    end
-    if #toRecurse > 0 then
-      for _, v in pairs(toRecurse) do
-        lib.recursiveDecompress(directoryPath .. "/" .. v, newDirectoryPath .. "/" .. v)
-      end
-    else
-      return true
+    for _, v in pairs(files) do
+      lib.decompressFile(v, newDirectoryPath .. "/" .. v)
     end
   else
     return false
   end
+  return true
 end
 
 --- Decompresses a file and directly runs the result; does not check for valid Lua 5.3 code.
@@ -462,6 +471,45 @@ function lib.runCompressedFile(filePath)
     return false
   else
     return program()
+  end
+end
+
+function lib.recursiveZipDirectory(directoryPath, newFilePath)
+  _G.ocz_settings.prog.file_table = {}
+  local files = getAllFiles(directoryPath)
+  if not directoryPath or not fs.exists(directoryPath) or not fs.isDirectory(directoryPath) then
+    return false
+  end
+  if not newFilePath then
+    return false
+  end
+  local data = ""
+  for _, v in pairs(files) do
+    data = data .. "OCZ-Start," .. v .. "HEnd"
+    data = data .. lib.compressFile(v)
+    data = data .. "OCZ-End"
+  end
+  data = lib.compress(data)
+  if type(data) ~= "string" then
+    return false
+  end
+  pcall(fs.remove(newFilePath))
+  local writeHandle = io.open(newFilePath, "w")
+  writeHandle:write(data)
+  writeHandle:close()
+end
+
+function lib.recursiveUnzipDirectory(filePath, newDirectoryPath)
+  local data = lib.decompressFile(filePath, nil)
+  while true do
+    if string.find(data, "OCZ-Start,") then
+      local _, b = string.find(data, "OCZ-Start,") -- first variable is always 1, if it isn't then we're fucked :fire: :fire:
+      local c, d = string.find(data, "HEnd")
+      local fileFilePath = string.sub(data, b + 1, c)
+      data = string.sub(data, b + 1)
+    else
+      break;
+    end
   end
 end
 

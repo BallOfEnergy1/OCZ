@@ -98,11 +98,7 @@ else
         if user == "y" or user == "Y" then
           print("Recursive decompression starting...")
           local time1 = os.time() * (1000/60/60) * 20
-          local result, a = ocz_lib.recursiveDecompress(args[2], args[3])
-          if a == 1 then
-            print("Cannot compress, attempting to write to source directory.")
-            return true
-          end
+          local result = ocz_lib.recursiveDecompress(args[2], args[3])
           if not result then
             print("Recursive decompression failed.")
             return true
