@@ -325,9 +325,6 @@ end
 --- @param newFilePath string|nil File path of the file to write decompressed data to.
 --- @return string Compressed data from file.
 function lib.compressFile(filePath, newFilePath)
-  if not newFilePath then
-    newFilePath = filePath
-  end
   local before, after = 0, 0
   before = before + fs.size(filePath)
   local readHandle = io.open(filePath, "r")
@@ -494,7 +491,7 @@ function lib.recursiveZipDirectory(directoryPath, newFilePath)
   local data = ""
   for _, v in pairs(files) do
     data = data .. "OCZ-Start," .. v .. "HEnd"
-    data = data .. lib.compressFile(v)
+    data = data .. lib.compress(v)
     data = data .. "OCZ-End"
   end
   data = lib.compress(data)
@@ -505,20 +502,44 @@ function lib.recursiveZipDirectory(directoryPath, newFilePath)
   local writeHandle = io.open(newFilePath, "w")
   writeHandle:write(data)
   writeHandle:close()
+  return true
 end
 
 function lib.recursiveUnzipDirectory(filePath, newDirectoryPath)
   local data = lib.decompressFile(filePath, nil)
   while true do
-    if string.find(data, "OCZ-Start,") then
-      local _, b = string.find(data, "OCZ-Start,") -- first variable is always 1, if it isn't then we're fucked :fire: :fire:
-      local c, d = string.find(data, "HEnd")
-      local fileFilePath = string.sub(data, b + 1, c)
-      data = string.sub(data, b + 1)
+    if string.find(data, "OCZ-Start,", 1, true) then
+      local _, b = string.find(data, "OCZ-Start,", 1, true) -- first variable is always 1, if it isn't then we're fucked :fire: :fire:
+      local c, d = string.find(data, "HEnd", 1, true)
+      local fileFilePath = string.sub(data, b + 1, c - 1)
+      data = string.sub(data, d + 1)
+      local e, f = string.find(data, "OCZ-End", 1, true)
+      if not e or not f then
+        log("Invalid sector: " .. tostring(d))
+        return false
+      end
+      local toDecompress = string.sub(data, 1, e-1)
+      data = string.sub(data, f + 1)
+      --filepath is `fileFilePath`
+      --data is `data`
+      fileFilePath = newDirectoryPath .. "/" .. fileFilePath
+      if not fs.exists(fileFilePath) then
+        local a = fileFilePath
+        while string.sub(a, -1) ~= "/" do
+          a = string.sub(a, 1, #a - 1)
+        end
+        fs.makeDirectory(a)
+      end
+      local decompressedData = lib.decompress(toDecompress)
+      pcall(fs.remove(fileFilePath))
+      local writeHandle = io.open(fileFilePath, "w")
+      writeHandle:write(decompressedData)
+      writeHandle:close()
     else
       break;
     end
   end
+  return true
 end
 
 return lib

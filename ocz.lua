@@ -8,6 +8,8 @@ if args[1] == nil then
   print("Valid commands:")
   print("  ocz compress")
   print("  ocz decompress")
+  print("  ocz zip")
+  print("  ocz unzip")
   print("  ocz run")
   print("  ocz help")
   print("  ocz debug")
@@ -134,6 +136,82 @@ else
         end
       end
     end
+  elseif type == "zip" then
+    if not args[2] then
+      print("No directory provided.")
+      return true
+    elseif not require("filesystem").exists(args[2]) then
+      print("Directory '" .. args[2] .. "' not found.")
+      return true
+    else
+      if require("filesystem").isDirectory(args[2]) then
+        if not args[3] then
+          print("No output file provided.")
+          return true
+        end
+        print("OCZ Directory Zipping")
+        print("Ready: ")
+        print("Compress directory: '" .. args[2] .. "'.")
+        print("Destination file: '" .. args[3] .. "'.")
+        print("Y to confirm, N to cancel.")
+        local user = (ops["a"] and "Y") or io.read()
+        if user == "y" or user == "Y" then
+          print("Zipping starting...")
+          local time1 = os.time() * (1000/60/60) * 20
+          local result = ocz_lib.recursiveZipDirectory(args[2], args[3])
+          if not result then
+            print("Zipping failed.")
+            return true
+          end
+          local time2 = os.time() * (1000/60/60) * 20
+          print("Directory zipping complete in " .. tostring(math.floor(time2-time1)) .. "ms.")
+        else
+          print("Canceled.")
+          return true
+        end
+      else
+        print("Not a directory.")
+        return true
+      end
+    end
+  elseif type == "unzip" then
+    if not args[2] then
+      print("No file provided.")
+      return true
+    elseif require("filesystem").exists(args[2]) then
+      print("File '" .. args[2] .. "' not found.")
+      return true
+    else
+      if not require("filesystem").isDirectory(args[2]) then
+        if not args[3] then
+          print("No output directory provided.")
+          return true
+        end
+        print("OCZ Directory Unzipping")
+        print("Ready: ")
+        print("Compress directory: '" .. args[2] .. "'.")
+        print("Destination file: '" .. args[3] .. "'.")
+        print("Y to confirm, N to cancel.")
+        local user = (ops["a"] and "Y") or io.read()
+        if user == "y" or user == "Y" then
+          print("Unzipping starting...")
+          local time1 = os.time() * (1000/60/60) * 20
+          local result = ocz_lib.recursiveUnzipDirectory(args[2], args[3])
+          if not result then
+            print("Unzipping failed.")
+            return true
+          end
+          local time2 = os.time() * (1000/60/60) * 20
+          print("Directory unzipping complete in " .. tostring(math.floor(time2-time1)) .. "ms.")
+        else
+          print("Canceled.")
+          return true
+        end
+      else
+        print("Is directory.")
+        return true
+      end
+    end
   elseif type == "run" then
     if not args[2] then
       print("No file provided.")
@@ -164,6 +242,8 @@ else
       print("Valid commands:")
       print("  ocz compress")
       print("  ocz decompress")
+      print("  ocz zip")
+      print("  ocz unzip")
       print("  ocz run")
       print("  ocz help")
       print("  ocz debug")
@@ -188,6 +268,26 @@ else
       print("Arguments:")
       print("source_file: File to decompress.")
       print("destination_file: Location to store data.")
+      print("Options:")
+      print("-a: Do not ask for user confirmation")
+    elseif args[2] == "zip" then
+      print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
+      print("ocz zip Syntax:")
+      print("ocz compress source_directory destination_file [-a]")
+      print("Compresses/zips the directory into `destination_file`")
+      print("Arguments:")
+      print("source_directory: Directory to compress.")
+      print("destination_file: Location to store data.")
+      print("Options:")
+      print("-a: Do not ask for user confirmation")
+    elseif args[2] == "unzip" then
+      print("OCZ (OCZip) Version: " .. _G.ocz_settings.prog.version)
+      print("ocz unzip Syntax:")
+      print("ocz unzip source_file destination_directory [-a]")
+      print("Decompresses/unzips the directory into `destination_directory`")
+      print("Arguments:")
+      print("source_file: Directory to unzip.")
+      print("destination_directory: Location to store data.")
       print("Options:")
       print("-a: Do not ask for user confirmation")
     elseif args[2] == "run" then
