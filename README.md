@@ -84,3 +84,7 @@ Very WIP.
       This setting can be enabled to force the program to use the data card. This can introduce major issues when attempting to compress large files/strings (>4KB).
       `use_data_card` must be true to use this setting, if a data card is not found then the program WILL fail and throw an uncaught error.
       Compressing a file/string while this setting is true and then attempting to decompress on a computer without a data card will cause an error.
+
+    _G.ocz_settings.disable_compressed_run: (default false)
+      This setting can be used to disable OCZ's ability to decompress and automatically execute files to prevent users from executing unwanted code remotely or through OCZ.
+      Users are still allowed to change settings using the OCZ through shell, so the setting is only effective if the shell program is not present.
