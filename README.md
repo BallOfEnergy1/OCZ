@@ -24,6 +24,11 @@ Very WIP.
 
     ocz.recursiveDecompress(directoryPath, newDirectoryPath) - Takes in a global directory path, recursively compressed all files in the directory, then writes to an identical structure in newDirectoryPath.
 
+    ocz.recursiveZipDirectory(directoryPath, newFilePath) - Takes in a global directory path and recursively zips the directory using the OCZip format, and then outputs the zipped data to the file at newFilePath. If the file already exists then the file will be deleted and overridden.
+    Be careful when using this, as if a file is not specified in newFilePath (Ex: /home, /boot, /home/toCompress), then it will immediately delete the directory in favor of creating the file. To avoid this, always specify a file name, such as /home/test.ocz.
+
+    ocz.recursiveUnzipDirectory(filePath, newDirectoryPath) - Takes in a global file path and unzips all the files stored inside the OCZip tree. If the target directory does not exist, then it will be created.
+
     ocz.runCompressedFile(filePath) - Takes in a global filepath and directly runs the compressed file. This function is NOT safe, as it can allow users to directly execute code via OCZ.
     This function can be completely disabled using the _G.ocz_settings.disable_compressed_run option.
   
