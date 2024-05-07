@@ -490,7 +490,7 @@ function lib.recursiveZipDirectory(directoryPath, newFilePath)
   end
   local data = ""
   for _, v in pairs(files) do
-    data = data .. "OCZ-Start," .. string.sub(v, #directoryPath) .. "HEnd"
+    data = data .. "OCZ-Start," .. string.sub(v, #directoryPath + 1) .. "HEnd"
     data = data .. lib.compress(v)
     data = data .. "OCZ-End"
   end
