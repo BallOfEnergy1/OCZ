@@ -178,7 +178,7 @@ else
     if not args[2] then
       print("No file provided.")
       return true
-    elseif require("filesystem").exists(args[2]) then
+    elseif not require("filesystem").exists(args[2]) then
       print("File '" .. args[2] .. "' not found.")
       return true
     else
