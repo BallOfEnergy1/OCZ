@@ -70,7 +70,7 @@ else
             return true
           end
           local time2 = os.time() * (1000/60/60) * 20
-          print("Recursive compression complete in " .. tostring(math.floor(time2-time1)) .. "ms.")
+          print("Compression complete in " .. tostring(math.floor(time2-time1)) .. "ms.")
           print("Pre-compressed size: " .. tostring(b/1000) .. "KB")
           print("Post-compressed size: " .. tostring(a/1000) .. "KB")
           print("Compression ratio: " .. string.sub(tostring(b/a), 1, 6))

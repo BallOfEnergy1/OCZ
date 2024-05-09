@@ -3,6 +3,7 @@ _G.ocz_settings = {
     version = "1.0.2",
     override = false,
     file_table = {},
+    current_bar = {},
     check_data = function()
       return require("component").isAvailable("data")
     end
@@ -431,11 +432,15 @@ function lib.recursiveCompress(directoryPath, newDirectoryPath)
     fs.makeDirectory(newDirectoryPath)
   end
   if fs.isDirectory(directoryPath) then
+    local prog = require("ocz/progress")
+    _G.ocz_settings.prog.current_bar = prog.new(#files * 2)
     for _, v in pairs(files) do
       local _, b, a = lib.compressFile(v, newDirectoryPath .. "/" .. v)
+      _G.ocz_settings.prog.current_bar.update(2)
       before = before + b
       after = after + a
     end
+    _G.ocz_settings.prog.current_bar.finish()
   else
     return false
   end
@@ -456,9 +461,13 @@ function lib.recursiveDecompress(directoryPath, newDirectoryPath)
     fs.makeDirectory(newDirectoryPath)
   end
   if fs.isDirectory(directoryPath) then
+    local prog = require("ocz/progress")
+    _G.ocz_settings.prog.current_bar = prog.new(#files * 2)
     for _, v in pairs(files) do
       lib.decompressFile(v, newDirectoryPath .. "/" .. v)
+      _G.ocz_settings.prog.current_bar.update(2)
     end
+    _G.ocz_settings.prog.current_bar.finish()
   else
     return false
   end
@@ -489,56 +498,81 @@ function lib.recursiveZipDirectory(directoryPath, newFilePath)
     return false
   end
   local data = ""
+  local prog = require("ocz/progress")
+  _G.ocz_settings.prog.current_bar = prog.new(#files * 2)
+  pcall(fs.remove(newFilePath))
+  local writeHandle = io.open(newFilePath, "w")
+  writeHandle:close()
   for _, v in pairs(files) do
     data = data .. "OCZ-Start," .. string.sub(v, #directoryPath + 1) .. "HEnd"
     data = data .. lib.compressFile(v, nil)
     data = data .. "OCZ-End"
+    writeHandle = io.open(newFilePath, "a")
+    writeHandle:write(data)
+    writeHandle:close()
+    data = ""
+    _G.ocz_settings.prog.current_bar.update(2)
   end
-  data = lib.compress(data)
-  if type(data) ~= "string" then
-    return false
-  end
-  pcall(fs.remove(newFilePath))
-  local writeHandle = io.open(newFilePath, "w")
-  writeHandle:write(data)
-  writeHandle:close()
+  _G.ocz_settings.prog.current_bar.finish()
   return true
 end
 
 function lib.recursiveUnzipDirectory(filePath, newDirectoryPath)
-  local data = lib.decompressFile(filePath, nil)
-  while true do
-    if string.find(data, "OCZ-Start,", 1, true) then
-      local _, b = string.find(data, "OCZ-Start,", 1, true) -- first variable is always 1, if it isn't then we're fucked :fire: :fire:
-      local c, d = string.find(data, "HEnd", 1, true)
-      local fileFilePath = string.sub(data, b + 1, c - 1)
-      data = string.sub(data, d + 1)
-      local e, f = string.find(data, "OCZ-End", 1, true)
-      if not e or not f then
-        log("Invalid sector: " .. tostring(d))
-        return false
-      end
-      local toDecompress = string.sub(data, 1, e-1)
-      data = string.sub(data, f + 1)
-      --filepath is `fileFilePath`
-      --data is `data`
-      fileFilePath = newDirectoryPath .. "/" .. fileFilePath
-      if not fs.exists(fileFilePath) then
-        local a = fileFilePath
-        while string.sub(a, -1) ~= "/" do
-          a = string.sub(a, 1, #a - 1)
-        end
-        fs.makeDirectory(a)
-      end
-      local decompressedData = lib.decompress(toDecompress)
-      pcall(fs.remove(fileFilePath))
-      local writeHandle = io.open(fileFilePath, "w")
-      writeHandle:write(decompressedData)
-      writeHandle:close()
-    else
-      break;
+  local prog = require("ocz/progress")
+  local two, files = 0, 0
+  local readHandle = io.open(filePath, "r")
+  while #readHandle:read(65535) > 0 do
+    local compressedData = readHandle.bufferRead
+    local data = lib.decompress(compressedData)
+    while string.find(data, "OCZ-Start,", two + 1, true) do
+      _, two = string.find(data, "OCZ-Start,", two + 1, true)
+      files = files + 1
     end
   end
+  readHandle:close()
+  _G.ocz_settings.prog.current_bar = prog.new(files * 2)
+  readHandle = io.open(filePath, "r")
+  while #readHandle:read(65535) > 0 do
+    local compressedData = readHandle.bufferRead
+    local data = lib.decompress(compressedData)
+    ::begin::
+    while true do
+      _G.ocz_settings.prog.current_bar.update(2)
+      if string.find(data, "OCZ-Start,", 1, true) then
+        local _, b = string.find(data, "OCZ-Start,", 1, true) -- first variable is always 1, if it isn't then we're fucked :fire: :fire:
+        local c, d = string.find(data, "HEnd", 1, true)
+        local fileFilePath = string.sub(data, b + 1, c - 1)
+        data = string.sub(data, d + 1)
+        local e, f = string.find(data, "OCZ-End", 1, true)
+        if not e or not f then
+          readHandle:read(65535)
+          data = data .. lib.decompress(readHandle.bufferRead)
+          goto begin
+        end
+        local toDecompress = string.sub(data, 1, e-1)
+        data = string.sub(data, f + 1)
+        --filepath is `fileFilePath`
+        --data is `data`
+        fileFilePath = newDirectoryPath .. "/" .. fileFilePath
+        if not fs.exists(fileFilePath) then
+          local a = fileFilePath
+          while string.sub(a, -1) ~= "/" do
+            a = string.sub(a, 1, #a - 1)
+          end
+          fs.makeDirectory(a)
+        end
+        local decompressedData = lib.decompress(toDecompress)
+        pcall(fs.remove(fileFilePath))
+        local writeHandle = io.open(fileFilePath, "w")
+        writeHandle:write(decompressedData)
+        writeHandle:close()
+      else
+        break;
+      end
+    end
+  end
+  readHandle:close()
+  _G.ocz_settings.prog.current_bar.finish()
   return true
 end
 
