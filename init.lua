@@ -1,6 +1,6 @@
 _G.ocz_settings = {
   prog = {
-    version = "1.0.2",
+    version = "1.2.2",
     override = false,
     file_table = {},
     current_bar = {},
