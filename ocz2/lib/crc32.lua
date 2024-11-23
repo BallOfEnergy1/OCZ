@@ -1,4 +1,3 @@
-local LibDeflate = {}
 local string_byte = string.byte
 
 -- Calculate xor for two unsigned 8bit numbers (0 <= a,b <= 255)
@@ -127,7 +126,7 @@ local _crc_table3 = {
 --- @param init_value nil|number The initial crc32 value. If nil, use 0
 --- @return number The CRC-32 checksum, which is greater or equal to 0,
 --- and less than 2^32 (4294967296).
-function LibDeflate:Crc32(str, init_value)
+local function crc32(str, init_value)
   -- TODO: Check argument
   local crc = (init_value or 0) % 4294967296
   if not _xor8_table then
@@ -164,4 +163,4 @@ function LibDeflate:Crc32(str, init_value)
   return crc
 end
 
-return LibDeflate
+return {Crc32 = crc32}
