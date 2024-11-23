@@ -7,7 +7,7 @@ A program for a Minecraft mod called OpenComputers that centers around allowing 
     ocz.compress(data, customValue, checksum, type) - Returns the data in a compressed format readable by the OCZ decompression function.
     customValue, checksum, and type are all optional fields.
 
-    ocz.decompress(data) - Takes in compressed data and returns the decompressed data in a string..
+    ocz.decompress(data) - Takes in compressed data and returns the decompressed data in a string.
 
     ocz.compressFile(filePath, customValue, checksum, type) - Takes in a global filepath, reads data from the file, then compresses the data.
     customValue, checksum, and type are all optional fields.    
