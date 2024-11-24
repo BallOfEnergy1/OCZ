@@ -42,23 +42,25 @@ end
 if args[1] == nil or args[2] == nil then
   print("OCZip2 v.2.0.4")
   print("Usage:")
-  print("  oz [options] <source> <destination>")
+  print("  oz [options] <destination> <source>")
   print("Options:")
   print("  --bs=n  Sets block size for compression.")
   print("  -c      Zip a file (default)")
   print("  -x      UnZip a file")
   print("  -l      Use lzw compression")
   print("  -d      Use inflate/deflate compression (default)")
+elseif not fs.exists(args[2]) then
+  io.stderr:write(string.format("%s: file not found", args[2]))
 else
   if mode then
     _G.oczConfig.maxData = blockSize
-    local data = ocz.compressFile(shell.resolve(args[1]), nil, true, method)
-    local file = io.open(os.getenv("PWD") .. "/" .. args[2], "w")
+    local data = ocz.compressFile(shell.resolve(args[2]), nil, true, method)
+    local file = io.open(os.getenv("PWD") .. "/" .. args[1], "w")
     file:write(data)
     file:close()
   else
-    local data = ocz.decompressFile(shell.resolve(args[1]))
-    local file = io.open(os.getenv("PWD") .. "/" .. args[2], "w")
+    local data = ocz.decompressFile(shell.resolve(args[2]))
+    local file = io.open(os.getenv("PWD") .. "/" .. args[1], "w")
     file:write(data)
     file:close()
   end
