@@ -3,8 +3,6 @@ local bit32 = require("bit32")
 local lualzw = require("lualzw")
 local component = require("component")
 
-local defaultMaxData = 8192 -- Default max minus 1.
-
 _G.oczConfig = {
   maxData = 8192 -- Default max minus 1.
 }
