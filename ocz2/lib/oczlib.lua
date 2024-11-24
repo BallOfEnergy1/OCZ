@@ -137,7 +137,7 @@ local function decompress(data)
         decompressedData = decompressedData .. lualzw.decompress(data)
       end
     until toDecompress == ""
-    return decompressedData
+    return decompressedData, options[1]
   end
 end
 
