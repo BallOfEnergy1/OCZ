@@ -13,6 +13,8 @@ elseif ops.c then
   mode = true
 elseif ops.x then
   mode = false  
+else
+  mode = true
 end
 
 -- Get block size
@@ -43,7 +45,7 @@ if args[1] == nil or args[2] == nil then
   print("  oz [options] <source> <destination>")
   print("Options:")
   print("  --bs=n  Sets block size for compression.")
-  print("  -c      Zip a file")
+  print("  -c      Zip a file (default)")
   print("  -x      UnZip a file")
   print("  -l      Use lzw compression")
   print("  -d      Use inflate/deflate compression (default)")
