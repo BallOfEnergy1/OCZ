@@ -42,7 +42,7 @@ end
 if args[1] == nil or args[2] == nil then
   print("OCZip2 v.2.0.4")
   print("Usage:")
-  print("  oz [options] <destination> <source>")
+  print("  ocz [options] <destination> <source>")
   print("Options:")
   print("  --bs=n  Sets block size for compression.")
   print("  -c      Zip a file (default)")
