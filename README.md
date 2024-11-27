@@ -1,7 +1,11 @@
-# OCZ2 (OCZip2)
-A program for a Minecraft mod called OpenComputers that centers around allowing easy compression and decompression of files and data.
+# OC-programs
+This is a repository with all of my programs that I plan to distribute.
 
-## Compatibility
+
+## OCZ2 (OCZip2)
+Compression/decompression library and program.
+
+### Compatibility
   OCZ has compatibility for other helper shell scripts and can be used in external programs. The functions exposed by the library consists of the following:
 
     ocz.compress(data, customValue, checksum, type) - Returns the data in a compressed format readable by the OCZ decompression function.
@@ -15,3 +19,7 @@ A program for a Minecraft mod called OpenComputers that centers around allowing 
     ocz.decompressFile(filePath) - Takes in a global filepath, reads data from the file, then decompresses the data.
 
     ocz.runCompressed(filePath) - Takes in a global filepath and directly runs the compressed file.
+
+## Fileman
+General purpose file manager, viewer, and editor.
+Very WIP, please report bugs to the issue tracker.
