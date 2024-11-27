@@ -1,0 +1,82 @@
+<config>
+    <keybinds>
+        <!--
+         All characters are available, control keys can be used by specifying the name as per the list in /lib/core/full_keyboard.lua or /lib/keyboard.lua.
+         Separate multiple character keybinds by a '-'.
+         -->
+        <bind id="exitPopup">lshift-back</bind>
+        <bind id="openInEditor">lcontrol-e</bind>
+        <bind id="refresh">lcontrol-r</bind>
+        <bind id="forceCrash">lcontrol-lshift-back</bind>
+        <bind id="nudgeDown">down</bind>
+        <bind id="nudgeUp">up</bind>
+        <bind id="fileTab">f</bind>
+        <bind id="viewTab">v</bind>
+        <bind id="linkTab">l</bind>
+        <bind id="selectedTab">s</bind>
+    </keybinds>
+    <version>2.7.0</version>
+    <filetypes>
+        <type id="txt">Standard Text File</type>
+        <type id="ocz">Compressed OCZip</type>
+        <type id="raw">Raw Uncompressed File</type>
+        <type id="lua">Lua Executable</type>
+        <type id="xml">XML Configuration File</type>
+        <type id="cfg">Configuration File</type>
+        <type id="lst">Standard List</type>
+        <type id="db">Database File</type>
+        <type id="md">Markdown File</type>
+        <type id="log">Log File</type>
+        <type id="tar">Compressed Directory</type>
+    </filetypes>
+    <themes>
+        <theme id="default">
+            <background>878787</background>
+            <textColor>000000</textColor>
+            <accentColor>A5A5A5</accentColor>
+            <invalidColor>787878</invalidColor>
+            <selectedColor>3324C0</selectedColor>
+            <selectedTextColor>FFFFFF</selectedTextColor>
+        </theme>
+        <theme id="dark">
+            <background>000000</background>
+            <textColor>FFFFFF</textColor>
+            <accentColor>5A5A5A</accentColor>
+            <invalidColor>4B4B4B</invalidColor>
+            <selectedColor>3324C0</selectedColor>
+            <selectedTextColor>FFFFFF</selectedTextColor>
+        </theme>
+        <theme id="light">
+            <background>FFFFFF</background>
+            <textColor>000000</textColor>
+            <accentColor>D2D2D2</accentColor>
+            <invalidColor>B4B4B4</invalidColor>
+            <selectedColor>3324C0</selectedColor>
+            <selectedTextColor>FFFFFF</selectedTextColor>
+        </theme>
+        <theme id="custom_1">
+            <background>330000</background>
+            <textColor>FFFFFF</textColor>
+            <accentColor>990000</accentColor>
+            <invalidColor>660000</invalidColor>
+            <selectedColor>CC0000</selectedColor>
+            <selectedTextColor>000000</selectedTextColor>
+        </theme>
+        <theme id="custom_2">
+            <background>004900</background>
+            <textColor>FFFFFF</textColor>
+            <accentColor>009200</accentColor>
+            <invalidColor>006D00</invalidColor>
+            <selectedColor>00DB00</selectedColor>
+            <selectedTextColor>000000</selectedTextColor>
+        </theme>
+        <theme id="custom_3">
+            <background>000040</background>
+            <textColor>FFFFFF</textColor>
+            <accentColor>0000C0</accentColor>
+            <invalidColor>000080</invalidColor>
+            <selectedColor>0000FF</selectedColor>
+            <selectedTextColor>FFFFFF</selectedTextColor>
+        </theme>
+    </themes>
+</config>

@@ -34,7 +34,7 @@ local DRAWING_DELAY = 1
 --avoids 'last minute' triggering of operations that are almost finished
 local INHIBITING_PROGRESS = 0.5 --0.5 = 50%
 --the time between two drawing operations (limits how often the progress bar is updated)
-local REFRESH_TIME = 0.25
+local REFRESH_TIME = 0.1
 
 --TIME -> STRING--
 local timeUnits = {
@@ -71,6 +71,8 @@ function auto_progress.new(self)
   assert(type(self) == "table", "Parameter has to be a table, a number or nil!")
   
   --make default values
+  self.buffer  = self.buffer or 0
+  
   self.doneWork  = self.doneWork or 0
   self.totalWork = self.totalWork or 1
   self.disabled  = self.disabled or false
@@ -83,6 +85,7 @@ function auto_progress.new(self)
   assert(self.x     == nil or type(self.x)     == "number", "progress_state.x has to be nil or a number!")
   assert(self.y     == nil or type(self.y)     == "number", "progress_state.y has to be nil or a number!")
   assert(self.width == nil or type(self.width) == "number", "progress_state.width has to be nil or a number!")
+  assert(self.buffer == nil or type(self.buffer) == "number", "progress_state.buffer has to be nil or a number!")
   assert(type(self.doneWork)  == "number", "progress_state.doneWork has to be nil or a number!")
   assert(type(self.totalWork) == "number", "progress_state.totalWork has to be nil or a number!")
   assert(type(self.disabled)  == "boolean", "progress_state.disabled has to be nil or a boolean!")
@@ -102,6 +105,7 @@ function auto_progress.new(self)
       end
     end
   end
+  
   --draws a final progress bar if necessary
   function self.finish()
     self.doneWork = self.totalWork
@@ -160,7 +164,12 @@ function auto_progress.new(self)
       local textPosition = math.floor((width - #text) / 2)
       line = line:sub(1, textPosition) .. text .. line:sub(textPosition + #text + 1, -1)
       --drawing...
+      local prevBuffer = gpu.getActiveBuffer()
+      gpu.setActiveBuffer(self.buffer)
       gpu.set(x, y, line)
+      gpu.set(x + (width / 2) - 9 - ((math.floor(math.log(self.doneWork, 10)) + 1) + (math.floor(math.log(self.totalWork, 10)) + 1)) / 2, y + 1, "Processing item " .. self.doneWork .. "/" .. self.totalWork)
+      gpu.bitblt(0, 40, 20, 160, 50, self.buffer, 1, 1)
+      gpu.setActiveBuffer(prevBuffer)
     end
   end
   return self
